@@ -93,4 +93,5 @@ public interface PlayableLogic {
      * Works only with 2 Human Players, and does not work when AIPlayer is playing.
      */
     void undoLastMove();
+
 }

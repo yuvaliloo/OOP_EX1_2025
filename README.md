@@ -18,7 +18,7 @@ For additional details, refer to the [assignment PDF](מימוש%20משחק%20ר
 
 ## Classes to Implement
 
-### 1. GameLogic
+### 1. PlayableLogic.GameLogic
 - Implements the `PlayableLogic` interface.
 - Manages game state, rules, board, and player turns.
 - Handles placing and flipping opponent discs.

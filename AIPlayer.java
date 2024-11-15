@@ -44,5 +44,5 @@ public abstract class AIPlayer extends Player {
     public static List<String> getAIPlayerTypes() {
         return new ArrayList<>(aiPlayerRegistry.keySet());
     }
-    public abstract Move makeMove(PlayableLogic gameStatus);
+    public abstract Move makeMove(Object gameStatus);
 }
