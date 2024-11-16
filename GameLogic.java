@@ -9,7 +9,6 @@ public class GameLogic  implements PlayableLogic {
     private Stack<Move> moveHistory;
     private ArrayList<Disc> curFlipped, lastFlipped;
     private Stack<Disc [][]> boardHistory;
-    private boolean undid;
     public GameLogic()
     {
         boardHistory=new Stack<>();
@@ -18,7 +17,6 @@ public class GameLogic  implements PlayableLogic {
         player1=new HumanPlayer(true);
         player2= new HumanPlayer(false);
         curFlipped=new ArrayList<>();
-        undid=false;
         for(int i=0;i<8;i++)
         {
             for(int j=0;j<8;j++)
@@ -58,7 +56,6 @@ public class GameLogic  implements PlayableLogic {
             Disc [][]b=copyBoard(board);
             boardHistory.add(b);
             curFlipped=new ArrayList<>();
-            undid=false;
             return true;
         }
         return false;
@@ -75,20 +72,23 @@ public class GameLogic  implements PlayableLogic {
     public void saveFlippedInDirection(int row, int col, int deltaRow, int deltaCol)
     {
         ArrayList<Disc> temp=new ArrayList<>();
+        boolean isFirstNull=true;
         int curRow=row+deltaRow;
         int curCol=col+deltaCol;
-        while((curRow<8 && curRow>=0 && curCol<8 && curCol>=0))
-        {
-            if(board[curRow][curCol]!=null)
-                if((isFirstPlayerTurn())&& !(board[curRow][curCol].getOwner().isPlayerOne)||(!isFirstPlayerTurn())&& (board[curRow][curCol].getOwner().isPlayerOne))
-                    temp.add(board[curRow][curCol]);
-            curRow+=deltaRow;
-            curCol+=deltaCol;
-        }
-        if((curRow<8 && curRow>=0 && curCol<8 && curCol>=0)&& ((isFirstPlayerTurn())&& (board[curRow][curCol].getOwner().isPlayerOne)||(!isFirstPlayerTurn())&& (!board[curRow][curCol].getOwner().isPlayerOne)))
-        {
-            curFlipped=temp;
-        }
+        if(curRow<8 && curRow>=0 && curCol<8 && curCol>=0 && board[curRow][curCol]!=null)
+            isFirstNull=false;
+        if(!isFirstNull)
+            while((curRow<8 && curRow>=0 && curCol<8 && curCol>=0))
+            {
+                if(board[curRow][curCol]!=null) {
+                    if (((isFirstPlayerTurn()) && !(board[curRow][curCol].getOwner().isPlayerOne)) || (!isFirstPlayerTurn()) && (board[curRow][curCol].getOwner().isPlayerOne))
+                        temp.add(board[curRow][curCol]);
+                    if (isFirstPlayerTurn() == board[curRow][curCol].getOwner().isPlayerOne)
+                        curFlipped.addAll(temp);
+                }
+                curRow+=deltaRow;
+                curCol+=deltaCol;
+            }
     }
     @Override
     public Disc getDiscAtPosition(Position position) {
@@ -206,6 +206,7 @@ public class GameLogic  implements PlayableLogic {
         board[4][3]=new SimpleDisc(player2);
         board[3][3]=new SimpleDisc(player1);
         board[4][4]=new SimpleDisc(player1);
+        boardHistory=new Stack<>();
         Disc [][]b=copyBoard(board);
         boardHistory.add(b);
         turn=1;
@@ -215,17 +216,9 @@ public class GameLogic  implements PlayableLogic {
 
     @Override
     public void undoLastMove() {
-        Position p;
-        if(!moveHistory.isEmpty()) {
-            p=moveHistory.pop().position();
-            board[p.row()][p.col()]=null;
-            for(int i=0;i<lastFlipped.size();i++)
-            {
-                if(isFirstPlayerTurn())
-                    lastFlipped.get(i).setOwner(player1);
-                else
-                    lastFlipped.get(i).setOwner(player2);
-            }
+        if(turn>1) {
+            boardHistory.pop();
+            board=copyBoard(boardHistory.peek());
             turn--;
         }
     }
@@ -235,9 +228,21 @@ public class GameLogic  implements PlayableLogic {
         for(int i=0;i<8;i++)
             for(int j=0;j<8;j++)
             {
-                b[i][j]=board[i][j];
+                b[i][j]=copyDisc(board[i][j]);
             }
         return b;
+    }
+    public Disc copyDisc(Disc d)
+    {
+        Disc disc=null;
+        if(d!=null)
+            if(d instanceof SimpleDisc)
+                disc=new SimpleDisc(d.getOwner());
+            else if(d instanceof BombDisc)
+                disc=new BombDisc(d.getOwner());
+            else
+                disc=new UnflippableDisc(d.getOwner());
+        return disc;
     }
 
 }
