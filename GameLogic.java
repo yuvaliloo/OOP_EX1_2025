@@ -6,17 +6,17 @@ public class GameLogic  implements PlayableLogic {
     private Player player1;
     private Player player2;
     private int turn;
-    private Stack<Move> moveHistory;
-    private ArrayList<Disc> curFlipped, lastFlipped;
+    private ArrayList<Disc> curFlipped, bombFlips, eatFlips;
     private Stack<Disc [][]> boardHistory;
     public GameLogic()
     {
         boardHistory=new Stack<>();
         turn=1;
-        moveHistory=new Stack<Move>();
         player1=new HumanPlayer(true);
         player2= new HumanPlayer(false);
         curFlipped=new ArrayList<>();
+        bombFlips=new ArrayList<>();
+        eatFlips=new ArrayList<>();
         for(int i=0;i<8;i++)
         {
             for(int j=0;j<8;j++)
@@ -43,8 +43,6 @@ public class GameLogic  implements PlayableLogic {
         if(isValid) {
             board[a.row()][a.col()]=disc;
             saveFlipped(a);
-            lastFlipped=curFlipped;
-            moveHistory.add(new Move(disc, a));
             for(int i=0;i<curFlipped.size();i++)
             {
                 if(isFirstPlayerTurn())
@@ -62,6 +60,7 @@ public class GameLogic  implements PlayableLogic {
     }
     public void saveFlipped(Position a)
     {
+        bombFlips.clear();
         int [][] directions={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}};
         for(int [] direction : directions)
         {
@@ -72,6 +71,7 @@ public class GameLogic  implements PlayableLogic {
     public void saveFlippedInDirection(int row, int col, int deltaRow, int deltaCol)
     {
         ArrayList<Disc> temp=new ArrayList<>();
+        ArrayList<Position> isBombSet=new ArrayList<>();
         boolean isFirstNull=true;
         int curRow=row+deltaRow;
         int curCol=col+deltaCol;
@@ -81,10 +81,18 @@ public class GameLogic  implements PlayableLogic {
             while((curRow<8 && curRow>=0 && curCol<8 && curCol>=0))
             {
                 if(board[curRow][curCol]!=null) {
-                    if (((isFirstPlayerTurn()) && !(board[curRow][curCol].getOwner().isPlayerOne)) || (!isFirstPlayerTurn()) && (board[curRow][curCol].getOwner().isPlayerOne))
-                        temp.add(board[curRow][curCol]);
-                    if (isFirstPlayerTurn() == board[curRow][curCol].getOwner().isPlayerOne)
+                    if(!board[curRow][curCol].getType().equals("⭕"))
+                        if (((isFirstPlayerTurn()) && !(board[curRow][curCol].getOwner().isPlayerOne)) || (!isFirstPlayerTurn()) && (board[curRow][curCol].getOwner().isPlayerOne)) {
+                            if(board[curRow][curCol].getType().equals("💣"))
+                                isBombSet.add(new Position(curRow,curCol));
+                            else
+                                temp.add(board[curRow][curCol]);
+                        }
+                    if (isFirstPlayerTurn() == board[curRow][curCol].getOwner().isPlayerOne) {
+                        for(Position p:isBombSet)
+                            setOffBomb(p);
                         curFlipped.addAll(temp);
+                    }
                 }
                 curRow+=deltaRow;
                 curCol+=deltaCol;
@@ -114,16 +122,22 @@ public class GameLogic  implements PlayableLogic {
 
     @Override
     public int countFlips(Position a) {
+        bombFlips.clear();
+        eatFlips.clear();
+        System.out.println("position: "+"["+a.row()+"]"+"["+a.col()+"]");
         int flips=0;
         int [][] directions={{-1,-1},{-1,0},{-1,1},{0,1},{1,1},{1,0},{1,-1},{0,-1}};
             for(int [] direction : directions)
             {
                 flips+=countFlipsInDirection(a.row(),a.col(),direction[0],direction[1]);
             }
+        System.out.println(" end of position");
         return flips;
     }
     public int countFlipsInDirection( int row, int col, int deltaRow, int deltaCol)
     {
+        ArrayList<Position> bombs=new ArrayList<>();
+        ArrayList<Position> temp=new ArrayList<>();
         boolean isFirstNull=true;
         int flips=0;
         int curRow=row+deltaRow;
@@ -134,41 +148,87 @@ public class GameLogic  implements PlayableLogic {
             while((curRow<8 && curRow>=0 && curCol<8 && curCol>=0))
             {
                 if(board[curRow][curCol]!=null) {
-                    if (((isFirstPlayerTurn()) && !(board[curRow][curCol].getOwner().isPlayerOne)) || (!isFirstPlayerTurn()) && (board[curRow][curCol].getOwner().isPlayerOne))
-                        flips++;
-                    if (isFirstPlayerTurn() == board[curRow][curCol].getOwner().isPlayerOne)
+                    if(!board[curRow][curCol].getType().equals("⭕"))
+                        if (((isFirstPlayerTurn()) && !(board[curRow][curCol].getOwner().isPlayerOne)) || (!isFirstPlayerTurn()) && (board[curRow][curCol].getOwner().isPlayerOne)) {
+                            if(board[curRow][curCol].getType().equals("💣")) {
+                                bombs.add(new Position(curRow, curCol));
+                                System.out.print(" new bomb added,");
+                            }
+                            else
+                                if(!containsDisc(bombFlips,board[curRow][curCol])){
+                                    temp.add(new Position(curRow,curCol));
+                                    flips++;
+                                    System.out.print(flips+",");
+                                }
+                        }
+                    if (isFirstPlayerTurn() == board[curRow][curCol].getOwner().isPlayerOne) {
+                        for(Position p : temp)
+                            eatFlips.add(board[p.row()][p.col()]);
+                        for(Position p : bombs)
+                            flips+=countBomb(p);
+                        System.out.print("total:"+flips+",");
                         return flips;
+                    }
                 }
                 curRow+=deltaRow;
                 curCol+=deltaCol;
             }
+        System.out.print(" X|");
         return 0;
     }
     public boolean containsDisc(ArrayList<Disc> lst, Disc d)
     {
-        for(int i=0;i<lst.size();i++)
-        {
-            if(lst.get(i).equals(d))
-                return true;
-        }
+        if(lst!=null)
+            for(int i=0;i<lst.size();i++)
+            {
+                if(lst.get(i).equals(d))
+                    return true;
+            }
         return false;
     }
-    public int setOffBomb(Position p)
+    public int countBomb(Position p)
     {
         int enemyFlips=0;
         for(int i=p.row()-1;i<p.row()+2;i++)
         {
             for(int j=p.col()-1;j<p.col()+2;j++)
-                if((i!=p.row() && j!=p.col()) && !board[i][j].getType().equals("⭕")) {
-                    if((isFirstPlayerTurn())&& !(board[i][j].getOwner().isPlayerOne)||(!isFirstPlayerTurn())&& (board[i][j].getOwner().isPlayerOne)) {
-                        enemyFlips++;
-                        curFlipped.add(board[i][j]);
-                    }
-                }
+                if(i>=0 && i<8 && j>=0 && j<8)
+                    if(board[i][j]!=null)
+                        if( !board[i][j].getType().equals("⭕") && !containsDisc(eatFlips,board[i][j]) && !containsDisc(bombFlips,board[i][j])) {
+                            if(((isFirstPlayerTurn())&& !(board[i][j].getOwner().isPlayerOne))||((!isFirstPlayerTurn())&& (board[i][j].getOwner().isPlayerOne))) {
+                                if(board[i][j].getType().equals("💣") && !(i==p.row() && j==p.col()))
+                                    enemyFlips+=countBomb(new Position(i,j));
+                                else {
+                                    enemyFlips++;
+                                }
+                                bombFlips.add(board[i][j]);
+                            }
+                        }
         }
 
         return enemyFlips;
     }
+    public void setOffBomb(Position p)
+    {
+        for(int i=p.row()-1;i<p.row()+2;i++)
+        {
+            for(int j=p.col()-1;j<p.col()+2;j++)
+                if(i>=0 && i<8 && j>=0 && j<8)
+                    if(board[i][j]!=null)
+                        if( !board[i][j].getType().equals("⭕") && !containsDisc(bombFlips,board[i][j])) {
+                            if(board[i][j].getType().equals("💣") && !(i==p.row() && j==p.col()))
+                                setOffBomb(new Position(i,j));
+                            else {
+                                if (((isFirstPlayerTurn()) && !(board[i][j].getOwner().isPlayerOne)))
+                                    board[i][j].setOwner(player1);
+                                else if (((!isFirstPlayerTurn()) && (board[i][j].getOwner().isPlayerOne)))
+                                    board[i][j].setOwner(player2);
+                            }
+                            bombFlips.add(board[i][j]);
+                        }
+        }
+    }
+
     @Override
     public Player getFirstPlayer() {
         return player1;
@@ -211,6 +271,8 @@ public class GameLogic  implements PlayableLogic {
         boardHistory.add(b);
         turn=1;
         curFlipped=new ArrayList<>();
+        bombFlips=new ArrayList<>();
+        eatFlips=new ArrayList<>();
         setPlayers(player1,player2);
     }
 
