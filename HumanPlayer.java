@@ -9,4 +9,6 @@ public class HumanPlayer extends Player {
     boolean isHuman() {
         return true;
     }
+
+
 }
