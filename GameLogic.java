@@ -4,7 +4,7 @@ public class GameLogic  implements PlayableLogic {
     private Disc [][] board=new Disc[8][8];
     private Player player1;
     private Player player2;
-    private Player curPlayer;
+    protected Player curPlayer;
     private int turn;
     private ArrayList<Disc> curFlipped, bombFlips, eatFlips;
     private ArrayList<Position> curFlippedPos;
@@ -57,20 +57,21 @@ public class GameLogic  implements PlayableLogic {
         if(isValid) {
             board[a.row()][a.col()]=disc;
             if(curPlayer.isPlayerOne)
-                System.out.println("Player 1 placed a "+disc.getType()+" in "+"["+a.row()+"]"+"["+a.col()+"]");
+                System.out.println("\nPlayer 1 placed a "+disc.getType()+" in "+"("+a.row()+","+a.col()+")");
             else
-                System.out.println("Player 2 placed a "+disc.getType()+" in "+"["+a.row()+"]"+"["+a.col()+"]");
+                System.out.println("\nPlayer 2 placed a "+disc.getType()+" in "+"("+a.row()+","+a.col()+")");
             saveFlipped(a);
             if(isFirstPlayerTurn())
                 for(int i=0;i<curFlipped.size();i++)
                 {
                     curFlipped.get(i).setOwner(player1);
-                    System.out.println("Player 1 flipped a "+curFlipped.get(i).getType()+" in ");
+                    System.out.println("Player 1 flipped a "+curFlipped.get(i).getType()+" in "+"("+curFlippedPos.get(i).row()+","+curFlippedPos.get(i).col()+")");
                 }
             else
                 for(int i=0;i<curFlipped.size();i++)
                 {
                     curFlipped.get(i).setOwner(player2);
+                    System.out.println("Player 2 flipped a "+curFlipped.get(i).getType()+" in "+"("+curFlippedPos.get(i).row()+","+curFlippedPos.get(i).col()+")");
                 }
             if(isFirstPlayerTurn())
                 curPlayer=player2;
@@ -108,6 +109,7 @@ public class GameLogic  implements PlayableLogic {
     public void saveFlippedInDirection(int row, int col, int deltaRow, int deltaCol)
     {
         ArrayList<Disc> temp=new ArrayList<>();
+        ArrayList<Position> tempPos=new ArrayList<>();
         ArrayList<Position> isBombSet=new ArrayList<>();
         boolean isFirstNull=true;
         int curRow=row+deltaRow;
@@ -122,13 +124,16 @@ public class GameLogic  implements PlayableLogic {
                         if (((isFirstPlayerTurn()) && !(board[curRow][curCol].getOwner().isPlayerOne)) || (!isFirstPlayerTurn()) && (board[curRow][curCol].getOwner().isPlayerOne)) {
                             if(board[curRow][curCol].getType().equals("💣"))
                                 isBombSet.add(new Position(curRow,curCol));
-                            else
+                            else {
                                 temp.add(board[curRow][curCol]);
+                                tempPos.add(new Position(curRow,curCol));
+                            }
                         }
                     if (isFirstPlayerTurn() == board[curRow][curCol].getOwner().isPlayerOne) {
                         for(Position p:isBombSet)
                             setOffBomb(p);
                         curFlipped.addAll(temp);
+                        curFlippedPos.addAll(tempPos);
                     }
                 }
                 curRow+=deltaRow;
@@ -272,10 +277,14 @@ public class GameLogic  implements PlayableLogic {
                             if(board[i][j].getType().equals("💣") && !(i==p.row() && j==p.col()))
                                 setOffBomb(new Position(i,j));
                             else {
-                                if (((isFirstPlayerTurn()) && !(board[i][j].getOwner().isPlayerOne)))
+                                if (((isFirstPlayerTurn()) && !(board[i][j].getOwner().isPlayerOne))) {
                                     board[i][j].setOwner(player1);
-                                else if (((!isFirstPlayerTurn()) && (board[i][j].getOwner().isPlayerOne)))
+                                    System.out.println("Player 1 flipped a "+board[i][j].getType()+" in "+"("+i+","+j+")");
+                                }
+                                else if (((!isFirstPlayerTurn()) && (board[i][j].getOwner().isPlayerOne))) {
                                     board[i][j].setOwner(player2);
+                                    System.out.println("Player 2 flipped a "+board[i][j].getType()+" in "+"("+i+","+j+")");
+                                }
                             }
                             bombFlips.add(board[i][j]);
                         }
@@ -305,20 +314,23 @@ public class GameLogic  implements PlayableLogic {
 
     @Override
     public boolean isGameFinished() {
-        int p1=0,p2=0;
-        for(int i=0;i<8;i++)
-            for(int j=0;j<8;j++)
-            {
-                if(board[i][j].getOwner().isPlayerOne)
-                    p1++;
-                else
-                    p2++;
-            }
-        if(p1>p2)
-            player1.wins++;
-        else if(p1<p2)
-            player2.wins++;
-        return ValidMoves().isEmpty();
+        if(ValidMoves().isEmpty()) {
+            int p1 = 0, p2 = 0;
+            for (int i = 0; i < 8; i++)
+                for (int j = 0; j < 8; j++) {
+                    if(board[i][j]!=null)
+                        if (board[i][j].getOwner().isPlayerOne)
+                            p1++;
+                        else
+                            p2++;
+                }
+            if (p1 > p2)
+                player1.wins++;
+            else if (p1 < p2)
+                player2.wins++;
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -346,11 +358,12 @@ public class GameLogic  implements PlayableLogic {
 
     @Override
     public void undoLastMove() {
-        if(turn>1) {
-            boardHistory.pop();
-            board=copyBoard(boardHistory.peek());
-            turn--;
-        }
+        if(!player1.isHuman() || !player2.isHuman())
+            if(turn>1) {
+                boardHistory.pop();
+                board=copyBoard(boardHistory.peek());
+                turn--;
+            }
     }
     /**
      * Creates a copy of the game board.
