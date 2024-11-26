@@ -84,6 +84,10 @@ public class GameLogic  implements PlayableLogic {
         }
         return false;
     }
+    /**
+     * saves the discs that will be flipped by a move.
+     * @param a is the current position of the tile.
+     */
     public void saveFlipped(Position a)
     {
         bombFlips.clear();
@@ -94,6 +98,13 @@ public class GameLogic  implements PlayableLogic {
         }
 
     }
+    /**
+     * Checks a specific direction (up, down, diagonal) from a position to determine which discs can be flipped.
+     * @param row pointing on the row of the tile that is being checked.
+     * @param col pointing on the column of the tile that is being checked.
+     * @param deltaRow is dictating the direction (row-wise) we want to check from the current tile.
+     * @param deltaCol is dictating the direction (column-wise) we want to check from the current tile.
+     */
     public void saveFlippedInDirection(int row, int col, int deltaRow, int deltaCol)
     {
         ArrayList<Disc> temp=new ArrayList<>();
@@ -158,6 +169,13 @@ public class GameLogic  implements PlayableLogic {
             }
         return flips;
     }
+    /**
+     * check the amount of discs that can be flipped in all valid directions from the current tile.
+     * @param row pointing on the row of the tile that is being checked.
+     * @param col pointing on the column of the tile that is being checked.
+     * @param deltaRow is dictating the direction (row-wise) we want to check from the current tile.
+     * @param deltaCol is dictating the direction (column-wise) we want to check from the current tile.
+     */
     public int countFlipsInDirection( int row, int col, int deltaRow, int deltaCol)
     {
         ArrayList<Position> bombs=new ArrayList<>();
@@ -196,6 +214,12 @@ public class GameLogic  implements PlayableLogic {
             }
         return 0;
     }
+    /**
+     * Checks if the given disc d is already in the list "lst".
+     * @param lst the list we want to check if the disc is contained in.
+     * @param d the disc we want to check if contained on the list.
+     * @return true if he is on the list
+     */
     public boolean containsDisc(ArrayList<Disc> lst, Disc d)
     {
         if(lst!=null)
@@ -206,6 +230,11 @@ public class GameLogic  implements PlayableLogic {
             }
         return false;
     }
+    /**
+     * Counts the number of enemy discs (and possible bomb effects) around the bomb at position p.
+     * @param p is the position we want to check from.
+     * @return the amount of enemy discs that will be flipped on the current move.
+     */
     public int countBomb(Position p)
     {
         int enemyFlips=0;
@@ -228,6 +257,10 @@ public class GameLogic  implements PlayableLogic {
 
         return enemyFlips;
     }
+    /**
+     * Activates the bomb and flipping the surrounding enemy discs.
+     * @param p the position of the bomb that is being set off.
+     */
     public void setOffBomb(Position p)
     {
         for(int i=p.row()-1;i<p.row()+2;i++)
@@ -319,6 +352,11 @@ public class GameLogic  implements PlayableLogic {
             turn--;
         }
     }
+    /**
+     * Creates a copy of the game board.
+     * @param board the board we want to copy.
+     * @return the copy of the board.
+     */
     public Disc [][] copyBoard(Disc [][] board)
     {
         Disc [][] b= new Disc[8][8];
@@ -329,6 +367,7 @@ public class GameLogic  implements PlayableLogic {
             }
         return b;
     }
+
     public Disc copyDisc(Disc d)
     {
         Disc disc=null;
