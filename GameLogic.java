@@ -393,5 +393,15 @@ public class GameLogic  implements PlayableLogic {
                 disc=new UnflippableDisc(d.getOwner());
         return disc;
     }
+    public List<Position> getOpponentValidMoves() {
+        // Determine the opponent based on whose turn it is
+        Player opponent = this.isFirstPlayerTurn() ? this.getSecondPlayer() : this.getFirstPlayer();
+
+        // Switch to the opponent's turn and get their valid moves
+        // Assuming `ValidMoves` returns the valid moves for the current turn's player
+        return this.ValidMoves();  // Since `ValidMoves()` already knows whose turn it is internally
+    }
+
+
 
 }
